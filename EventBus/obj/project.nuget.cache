@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "RrdXj4tDRLFsM86/tlYAFXTEncII9ZYdwiDizonl/nLIHywOg6pcABdhafQF3M7DsM4zUqVBtIRJDg95slubZw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\gurkan.gur\\source\\repos\\EventBus\\EventBus\\EventBus.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\autofac\\6.1.0\\autofac.6.1.0.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\newtonsoft.json\\12.0.3\\newtonsoft.json.12.0.3.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\polly\\7.2.1\\polly.7.2.1.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\rabbitmq.client\\6.2.1\\rabbitmq.client.6.2.1.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\system.diagnostics.diagnosticsource\\4.7.1\\system.diagnostics.diagnosticsource.4.7.1.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512",
+    "C:\\Users\\gurkan.gur\\.nuget\\packages\\system.threading.channels\\4.7.1\\system.threading.channels.4.7.1.nupkg.sha512"
+  ],
+  "logs": []
+}
