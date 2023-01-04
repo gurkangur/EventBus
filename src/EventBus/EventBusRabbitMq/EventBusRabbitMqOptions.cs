@@ -19,6 +19,7 @@ namespace EventBus.EventBusRabbitMq
 
         public string BrokerName { get; set; } = "event_bus";
 
+        public int ConsumerExceptionRetryCount { get; set; } = 5;
         public int RetryCount { get; set; } = 5;
     }
 }

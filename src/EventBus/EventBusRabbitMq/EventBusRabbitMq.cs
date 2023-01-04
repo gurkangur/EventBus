@@ -9,6 +9,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
 using System.Net.Sockets;
 using System.Text;
@@ -193,18 +194,16 @@ namespace EventBus.EventBusRabbitMq
         private async void Consumer_Received(object model, BasicDeliverEventArgs ea)
         {
             var eventName = ea.RoutingKey;
-
-#if NETSTANDARD2_1
             var message = Encoding.UTF8.GetString(ea.Body.Span);
-#else
-            var message = Encoding.UTF8.GetString(ea.Body.ToArray());
-#endif
-
-            //  var message = Encoding.UTF8.GetString(ea.Body);
-
             var processed = false;
+
             try
             {
+                if (message.ToLowerInvariant().Contains("throw-fake-exception"))
+                {
+                    throw new InvalidOperationException($"Fake exception requested: \"{message}\"");
+                }
+
                 processed = await ProcessEvent(eventName, message);
             }
             catch (Exception ex)
@@ -218,8 +217,62 @@ namespace EventBus.EventBusRabbitMq
             }
             else
             {
-                _consumerChannel.BasicNack(ea.DeliveryTag, false, true);
+                int retryCount = GetRetryCount(ea.BasicProperties, "number-of-retries");
+
+                if (retryCount < _options.ConsumerExceptionRetryCount)
+                {
+                    _logger.LogWarning("Message {0} has thrown an exception. Current number of retries: {1}", message, retryCount);
+                    IBasicProperties propertiesForCopy = _consumerChannel.CreateBasicProperties();
+                    IDictionary<string, object> headersCopy = CopyHeaders(ea.BasicProperties);
+                    propertiesForCopy.Headers = headersCopy;
+                    propertiesForCopy.Headers["number-of-retries"] = ++retryCount;
+                    var eventType = _subsManager.GetEventTypeByName(eventName);
+                    var integrationEvent = JsonSerializer.Deserialize(message, eventType, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) as Event;
+                    integrationEvent.RetryCount = retryCount;
+                    var body = JsonSerializer.SerializeToUtf8Bytes(integrationEvent, eventType, new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+                    _consumerChannel.BasicPublish(ea.Exchange, ea.RoutingKey, propertiesForCopy, ea.Body);
+                    _consumerChannel.BasicAck(ea.DeliveryTag, false);
+                    _logger.LogWarning("Message {0} thrown back at queue for retry. New retry count: {1}", message, retryCount);
+                }
+                else //must be rejected, cannot process
+                {
+                    _logger.LogError("Message {0} has reached the max number of retries. It will be rejected.", message);
+                    _consumerChannel.BasicReject(ea.DeliveryTag, false);
+                }
             }
+
+        }
+        private static IDictionary<string, object> CopyHeaders(IBasicProperties originalProperties)
+        {
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> headers = originalProperties.Headers;
+            if (headers != null)
+            {
+                foreach (KeyValuePair<string, object> kvp in headers)
+                {
+                    dict[kvp.Key] = kvp.Value;
+                }
+            }
+
+            return dict;
+        }
+        private static int GetRetryCount(IBasicProperties messageProperties, string countHeader)
+        {
+            IDictionary<string, object> headers = messageProperties.Headers;
+            int count = 0;
+            if (headers != null)
+            {
+                if (headers.ContainsKey(countHeader))
+                {
+                    string countAsString = Convert.ToString(headers[countHeader]);
+                    count = Convert.ToInt32(countAsString);
+                }
+            }
+
+            return count;
         }
 
         private IModel CreateConsumerChannel()

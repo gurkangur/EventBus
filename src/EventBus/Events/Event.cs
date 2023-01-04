@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace EventBus.Events
 {
@@ -8,8 +9,21 @@ namespace EventBus.Events
         {
             Id = Guid.NewGuid();
             CreationDate = DateTime.UtcNow;
+            RetryCount = 1;
         }
-        public Guid Id { get; }
-        public DateTime CreationDate { get; }
+
+        [JsonConstructor]
+        public Event(Guid id, DateTime createDate, int retryCount)
+        {
+            Id = id;
+            CreationDate = createDate;
+            RetryCount = retryCount;
+        }
+        [JsonInclude]
+        public Guid Id { get; private set; }
+        [JsonInclude]
+        public DateTime CreationDate { get; private set; }
+        [JsonInclude]
+        public int RetryCount { get; set; }
     }
 }
